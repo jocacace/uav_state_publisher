@@ -60,10 +60,8 @@ class UAVStatePublisher(QMainWindow):
         self.setpoint_raw_pub = rospy.Publisher('mavros/setpoint_raw/local', PositionTarget, queue_size=1)
         self.raw_msg = PositionTarget()
 
-        #MASK_POSITION = 0b0000011111111000, // x, y, z, vyaw
-        #MASK_VELOCITY = 0b0000011111000111, // vx, vy, vz, vyaw
         self.raw_msg.coordinate_frame = PositionTarget.FRAME_LOCAL_NED
-        #self.raw_msg.type_mask = 0b0000011111111000
+
         '''
         uint16 IGNORE_PX=1
         uint16 IGNORE_PY=2
@@ -86,18 +84,7 @@ class UAVStatePublisher(QMainWindow):
 
         self.setWindowTitle("UAV State Publisher")
         
-        #label = QLabel("Yaw")
-        #label.setFont(font)       
-        #layout.setGeometry(50,50,320,200)
-        #self.layout.addWidget(label)
-        #layout.addWidget(QPushButton('Bottom'))                
-        #mySlider = QSlider(Qt.Horizontal, self)
-        #mySlider.setGeometry(30, 40, 200, 30)
-        #mySlider.valueChanged[int].connect(self.changeValue)
-        #mySlider.setRange(-180, 180)
-        #mySlider.setValue(0)
-        #self.layout.addWidget(mySlider)
-
+     
         #Position label
         self.textbox_state = QLabel(self)
         self.textbox_state.move(20, 20)
