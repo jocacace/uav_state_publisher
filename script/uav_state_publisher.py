@@ -52,8 +52,11 @@ class UAVStatePublisher(QMainWindow):
         self.state = "Idle"
         self.arm_state = False
         self.local_cmd = ([0.0, 0.0, 0.0])
+        self.dx_cmd = 0.0
+        self.dy_cmd = 0.0
+        self.dz_cmd = 0.0
         self.yaw_cmd = 0.0
-
+        
         self.setpoint_raw_pub = rospy.Publisher('mavros/setpoint_raw/local', PositionTarget, queue_size=1)
         self.raw_msg = PositionTarget()
 
@@ -143,18 +146,49 @@ class UAVStatePublisher(QMainWindow):
         self.offboard_button.move(100,70)
         self.offboard_button.clicked.connect(self.on_click_offboard)
 
+        x_cmdlabel = QLabel("Slide to command the x rate (d/s)")
+        x_cmdlabel.setFont(font)
+        
+        self.cmd_dx_slider = QSlider(Qt.Horizontal, self)
+        self.cmd_dx_slider.setGeometry(30, 40, 200, 30)
+        self.cmd_dx_slider.valueChanged[int].connect(self.changeValue_dx)
+        self.cmd_dx_slider.setRange(-10, 10)
+        self.cmd_dx_slider.setValue(0)
+
+        y_cmdlabel = QLabel("Slide to command the y rate (d/s)")
+        y_cmdlabel.setFont(font)
+
+        self.cmd_dy_slider = QSlider(Qt.Horizontal, self)
+        self.cmd_dy_slider.setGeometry(30, 40, 200, 30)
+        self.cmd_dy_slider.valueChanged[int].connect(self.changeValue_dy)
+        self.cmd_dy_slider.setRange(-10, 10)
+        self.cmd_dy_slider.setValue(0)
+
+        z_cmdlabel = QLabel("Slide to command the z rate (d/s)")
+        z_cmdlabel.setFont(font)
+
+        self.cmd_dz_slider = QSlider(Qt.Horizontal, self)
+        self.cmd_dz_slider.setGeometry(30, 40, 200, 30)
+        self.cmd_dz_slider.valueChanged[int].connect(self.changeValue_dz)
+        self.cmd_dz_slider.setRange(-10, 10)
+        self.cmd_dz_slider.setValue(0)
+
+        self.center_slider_button = QPushButton('Center', self)
+        self.center_slider_button.setToolTip('Put in the middel all sliders')
+        self.center_slider_button.move(100,70)
+        self.center_slider_button.clicked.connect(self.on_click_center)
+
 
         yaw_cmdlabel = QLabel("Slide to command the yaw rate (d/s)")
         yaw_cmdlabel.setFont(font)
-        #layout.setGeometry(50,50,320,200)
+        
 
-        mySlider = QSlider(Qt.Horizontal, self)
-        mySlider.setGeometry(30, 40, 200, 30)
-        mySlider.valueChanged[int].connect(self.changeValue)
-        mySlider.setRange(-60, 60.0)
-        mySlider.setValue(0)
-        #self.layout.addWidget(mySlider)
-
+        self.cmd_dyaw_slider = QSlider(Qt.Horizontal, self)
+        self.cmd_dyaw_slider.setGeometry(30, 40, 200, 30)
+        self.cmd_dyaw_slider.valueChanged[int].connect(self.changeValue_dyaw)
+        self.cmd_dyaw_slider.setRange(-60, 60)
+        self.cmd_dyaw_slider.setValue(0)
+        
         
         self.layout.addWidget(self.textbox_state)
         self.layout.addWidget(self.textbox_pos)
@@ -165,8 +199,16 @@ class UAVStatePublisher(QMainWindow):
         self.layout.addWidget(self.toff_button)
         self.layout.addWidget(self.land_button)
         self.layout.addWidget(self.offboard_button)
+        
+        self.layout.addWidget(x_cmdlabel)
+        self.layout.addWidget(self.cmd_dx_slider)
+        self.layout.addWidget(y_cmdlabel)
+        self.layout.addWidget(self.cmd_dy_slider)
+        self.layout.addWidget(z_cmdlabel)
+        self.layout.addWidget(self.cmd_dz_slider)
         self.layout.addWidget(yaw_cmdlabel)
-        self.layout.addWidget(mySlider)
+        self.layout.addWidget(self.cmd_dyaw_slider)
+        self.layout.addWidget(self.center_slider_button)
         
 
         window.setLayout(self.layout)
@@ -204,13 +246,28 @@ class UAVStatePublisher(QMainWindow):
         print("Request Land") #Todo
         self.land_req(altitude = 0, latitude = 0, longitude = 0, min_pitch = 0, yaw = 0)
 
+    def on_click_center(self):
+        self.cmd_dx_slider.setValue(0)
+        self.cmd_dy_slider.setValue(0)
+        self.cmd_dz_slider.setValue(0)
+        self.cmd_dyaw_slider.setValue(0)
 
     def on_click_offboard(self):            
         self.offboard_req( base_mode = 0, custom_mode = "OFFBOARD" )
 
-    def changeValue(self, value):
+    def changeValue_dyaw(self, value):
         self.yaw_cmd = ( value*3.1415)/180.0
-        print(self.yaw_cmd)
+
+    def changeValue_dx(self, value):       
+        self.dx_cmd = value / 10.0
+        
+        
+    def changeValue_dy(self, value):
+        self.dy_cmd = value / 10.0
+
+    def changeValue_dz(self, value):
+        self.dz_cmd = value / 10.0
+        
 
     def stateCb(self,msg): 
         self.state = msg.mode
@@ -234,11 +291,10 @@ class UAVStatePublisher(QMainWindow):
 
 
         if( self.state == "OFFBOARD"):
-            x = 1
+            self.local_cmd[0] = self.local_cmd[0] + self.dx_cmd*0.02
+            self.local_cmd[1] = self.local_cmd[1] + self.dy_cmd*0.02
+            self.local_cmd[2] = self.local_cmd[2] + self.dz_cmd*0.02
             
-            #self.local_cmd[0] = 1
-            #self.local_cmd[1] = 0
-            #self.local_cmd[2] = 3
         else:
             self.yaw_cmd = 0.0
             self.local_cmd[0] = msg.pose.pose.position.x
@@ -251,7 +307,7 @@ class UAVStatePublisher(QMainWindow):
         self.raw_msg.yaw_rate = self.yaw_cmd
 
         self.textbox_cmd_pos.setText( "Cmd Pos: " + str(round(self.local_cmd[0], 2)) + " " + str( round(self.local_cmd[1], 2)) + " " + str( round(self.local_cmd[2], 2)) )
-        self.textbox_cmd_yaw.setText( "Cmd Yaw: " + str(round(self.yaw_cmd, 2)))
+        self.textbox_cmd_yaw.setText( "Cmd dYaw: " + str(round(self.yaw_cmd, 2)) + " rad/s")
         self.setpoint_raw_pub.publish( self.raw_msg )
 
 
