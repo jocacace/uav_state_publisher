@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import sys
 import rospy
 import roslib
@@ -29,7 +31,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout
 class UAVStatePublisher(QMainWindow):
 
     def __init__(self):
-        super().__init__()
+        super(UAVStatePublisher, self).__init__()
 
         #Not working: how to set window dimension
         self.height =300
@@ -47,7 +49,7 @@ class UAVStatePublisher(QMainWindow):
         self.land_req = rospy.ServiceProxy('/mavros/cmd/land', CommandTOL)
         self.offboard_req = rospy.ServiceProxy('/mavros/set_mode', SetMode)
 
-        rospy.Subscriber("/mavros/global_position/local", Odometry, self.odomCb)
+        rospy.Subscriber("/mavros/local_position/odom", Odometry, self.odomCb)
         rospy.Subscriber("/mavros/state", State, self.stateCb)
         self.state = "Idle"
         self.arm_state = False
