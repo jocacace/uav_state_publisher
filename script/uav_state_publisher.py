@@ -527,5 +527,3 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     ex = UAVStatePublisher()
     sys.exit(app.exec_())
-
-    bg3xevpjZq
